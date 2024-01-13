@@ -5,9 +5,12 @@ import open3d.cpu.pybind.pipelines.registration
 from tqdm import tqdm
 import json
 
+import read_pcd
+
 # config
 project = "room"
-instance = 2
+instance = 3
+
 dim = 128
 r = "1.500000"
 n = "16"
@@ -20,24 +23,7 @@ source_color = np.asarray([1, 0, 0])
 transformed_source_color = np.asarray([0, 1, 0])
 target_color = np.asarray([0, 0, 1])
 
-with open(f"data/{project}-pcd/points.json") as fp:
-    info = json.load(fp)
-    source_salient_idx = info[f'pcd_{instance}']['all_idxs']
-    target_salient_idx = info['pcd_1']['all_idxs']
-    # print(info.keys())
-    # print(info['pcd_1']['uncertainty'])
-
-# down sampling (use the salient points as the down sampled points)
-# compute FPFH feature for each point
-
-source = o3d.io.read_point_cloud(f'data/{project}-pcd/{project}-pcd-{instance}.ply')
-target = o3d.io.read_point_cloud(f'data/{project}-pcd/{project}-pcd-1.ply')
-
-source_down = o3d.geometry.PointCloud()
-source_down.points = o3d.utility.Vector3dVector(np.asarray(source.points)[source_salient_idx])
-
-target_down = o3d.geometry.PointCloud()
-target_down.points = o3d.utility.Vector3dVector(np.asarray(target.points)[target_salient_idx])
+source, target, source_down, target_down = pcdio.load_data(project, instance)
 
 source_feature = open3d.pipelines.registration.Feature()
 source_data = np.load(f"data/3ds-feature/{dim}dim/{project}-pcd-{instance}.ply_{r}_{n}_{h}_3DSmoothNet.npz")['data']#[source_salient_idx]
@@ -77,11 +63,15 @@ for i in tqdm(range(trials)):
     if temp_result_ransac.inlier_rmse < result_ransac.inlier_rmse:
         result_ransac = temp_result_ransac
 
+
 transformation = result_ransac.transformation
 print(result_ransac.inlier_rmse)
 
 transformed_source = copy.deepcopy(source)
 transformed_source.transform(transformation)
+
+# output to file
+o3d.io.write_point_cloud(f"data/ransac/{project}{instance}.ply", transformed_source, write_ascii=True)
 
 # set color
 transformed_source.paint_uniform_color(transformed_source_color)
@@ -92,8 +82,8 @@ vis = o3d.visualization.Visualizer()
 vis.create_window('3ds_ransac')
 
 # vis.add_geometry(source)
-vis.add_geometry(transformed_source)
 vis.add_geometry(target)
+vis.add_geometry(transformed_source)
 
 render_opt = vis.get_render_option()
 render_opt.point_size = 4.0

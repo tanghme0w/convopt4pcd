@@ -2,7 +2,7 @@ import numpy as np
 import open3d as o3d
 import json
 
-project = "temple"
+project = "bunny"
 pcdList = []
 
 for i in range(3):
@@ -14,7 +14,7 @@ with open(f"data/{project}-pcd/points.json") as fp:
     print(info['pcd_1']['uncertainty'])
 
 
-default_color = np.asarray([[1, 1, 0], [0, 1, 0], [1, 0, 1]])
+default_color = np.asarray([[0, 1, 1], [0, 1, 0], [0, 0, 1]])
 renderList = [1, 2]
 print(default_color[1].shape)
 

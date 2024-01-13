@@ -4,6 +4,8 @@ import open3d as o3d
 from tqdm import tqdm
 import json
 
+import read_pcd
+
 # config
 project = "room"
 instance = 2
@@ -13,22 +15,8 @@ transformed_source_color = np.asarray([0, 1, 0])
 target_color = np.asarray([0, 0, 1])
 
 
-with open(f"data/{project}-pcd/points.json") as fp:
-    info = json.load(fp)
-    source_salient_idx = info[f'pcd_{instance}']['all_idxs']
-    target_salient_idx = info['pcd_1']['all_idxs']
-    # print(info.keys())
-    # print(info['pcd_1']['uncertainty'])
+source, target, source_down, target_down = pcdio.load_data(project, instance)
 
-# down sampling (use the salient points as the down sampled points)
-# compute FPFH feature for each point
-
-source = o3d.io.read_point_cloud(f'data/{project}-pcd/{project}-pcd-{instance}.ply')
-target = o3d.io.read_point_cloud(f'data/{project}-pcd/{project}-pcd-1.ply')
-# source_down = o3d.geometry.PointCloud()
-# source_down.points = o3d.utility.Vector3dVector(np.asarray(source.points)[source_salient_idx])
-# target_down = o3d.geometry.PointCloud()
-# target_down.points = o3d.utility.Vector3dVector(np.asarray(target.points)[target_salient_idx])
 source.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=3 * voxel_size, max_nn=30))
 target.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=3 * voxel_size, max_nn=30))
 source_fpfh = o3d.pipelines.registration.compute_fpfh_feature(source, o3d.geometry.KDTreeSearchParamHybrid(radius=5 * voxel_size, max_nn=100))
